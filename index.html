@@ -31,6 +31,10 @@
                     </div>
                     <div class="image-info">
                         <span>文件大小: <span id="originalSize">0 KB</span></span>
+                        <span class="compression-rate">
+                            压缩率: <span id="compressionRate">0%</span>
+                            <span class="savings">节省空间: <span id="spaceSaved">0 KB</span></span>
+                        </span>
                     </div>
                 </div>
 
@@ -47,6 +51,24 @@
 
             <!-- 控制面板 -->
             <div class="control-panel">
+                <div class="format-control">
+                    <label>输出格式:</label>
+                    <select id="formatSelect" class="format-select">
+                        <option value="image/jpeg">JPEG - 适合照片</option>
+                        <option value="image/png">PNG - 支持透明</option>
+                        <option value="image/webp">WebP - 更小体积</option>
+                        <option value="image/avif">AVIF - 最佳压缩</option>
+                    </select>
+                    <div class="format-info">
+                        <span class="format-tip">?</span>
+                        <div class="format-tooltip">
+                            <p>JPEG: 适合照片,不支持透明</p>
+                            <p>PNG: 支持透明,适合图标和截图</p>
+                            <p>WebP: 谷歌开发的新格式,体积小</p>
+                            <p>AVIF: 新一代格式,体积最小但兼容性较差</p>
+                        </div>
+                    </div>
+                </div>
                 <div class="quality-control">
                     <label for="quality">压缩质量:</label>
                     <input type="range" id="quality" min="0" max="100" value="80">
@@ -55,6 +77,18 @@
                 <button id="downloadBtn" class="download-btn">下载压缩后的图片</button>
                 <button id="resetBtn" class="reset-btn">重新上传</button>
             </div>
+
+            <div class="compression-presets">
+                <button class="preset-btn" data-quality="90">高质量</button>
+                <button class="preset-btn" data-quality="70">平衡</button>
+                <button class="preset-btn" data-quality="40">最小体积</button>
+            </div>
+        </div>
+
+        <div class="upload-limits">
+            <p>支持格式: PNG, JPG, JPEG, WebP</p>
+            <p>单文件大小限制: 10MB</p>
+            <p>批量上传限制: 最多20张图片</p>
         </div>
     </div>
     <script src="script.js"></script>

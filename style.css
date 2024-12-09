@@ -71,6 +71,8 @@ body {
 }
 
 .image-container {
+    position: relative;
+    cursor: zoom-in;
     aspect-ratio: 16/9;
     background: #fff;
     border-radius: 12px;
@@ -112,6 +114,7 @@ input[type="range"] {
     background: #0071e3;
     border-radius: 2px;
     -webkit-appearance: none;
+    appearance: none;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -162,3 +165,143 @@ button {
         padding: 20px;
     }
 } 
+
+/* 添加平滑滚动 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 深色模式样式 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #121212;
+    --text-color: #ffffff;
+  }
+}
+
+/* 添加过渡动画 */
+.page-transition {
+  transition: all 0.3s ease;
+}
+
+/* 回到顶部按钮样式 */
+.back-to-top {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 10px;
+  background: #333;
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  display: none;
+} 
+
+.magnifier {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border: 2px solid #0071e3;
+    border-radius: 50%;
+    pointer-events: none;
+    display: none;
+    background-repeat: no-repeat;
+}
+
+.format-control {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.format-select {
+    padding: 8px 12px;
+    border: 1px solid #86868b;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1d1d1f;
+    background: #fff;
+    cursor: pointer;
+}
+
+.format-info {
+    position: relative;
+    display: inline-block;
+}
+
+.format-tip {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #86868b;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: help;
+}
+
+.format-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    width: 200px;
+    display: none;
+    z-index: 100;
+}
+
+/* 添加预设按钮样式 */
+.compression-presets {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.preset-btn {
+    padding: 8px 16px;
+    border: 1px solid #86868b;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #1d1d1f;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.preset-btn:hover {
+    border-color: #0071e3;
+    color: #0071e3;
+    background: rgba(0,113,227,0.05);
+}
+
+/* 添加上传限制提示样式 */
+.upload-limits {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(0,0,0,0.05);
+    border-radius: 8px;
+    font-size: 14px;
+    color: #86868b;
+}
+
+.upload-limits p {
+    margin: 5px 0;
+}
+
+/* 添加压缩率显示样式 */
+.compression-rate {
+    margin-left: 15px;
+    padding-left: 15px;
+    border-left: 1px solid #e5e5e7;
+}
+
+.savings {
+    margin-left: 15px;
+    color: #34c759;
+}
