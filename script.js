@@ -354,21 +354,39 @@ function readFileAsBase64(file) {
     });
 }
 
-// 显示批量处理结果
+// 修改showBatchResults函数
 function showBatchResults(results) {
-    // 移除进度条
     const progressBar = document.querySelector('.progress-bar');
     if (progressBar) progressBar.remove();
     
-    // 移除之前的批量预览（如果存在）
     const oldBatchPreview = document.querySelector('.batch-preview');
     if (oldBatchPreview) oldBatchPreview.remove();
+    
+    const batchPreview = document.createElement('div');
+    batchPreview.className = 'batch-preview';
+    
+    // 添加批量格式控制
+    const batchControls = document.createElement('div');
+    batchControls.className = 'batch-controls';
+    batchControls.innerHTML = `
+        <div class="format-control">
+            <label>批量设置格式:</label>
+            <select class="batch-format-select">
+                <option value="image/jpeg">JPEG - 适合照片</option>
+                <option value="image/png">PNG - 支持透明</option>
+                <option value="image/webp">WebP - 更小体积</option>
+                <option value="image/avif">AVIF - 最佳压缩</option>
+            </select>
+            <button class="apply-format-btn">应用到全部</button>
+        </div>
+    `;
     
     // 创建结果网格
     const resultsGrid = document.createElement('div');
     resultsGrid.className = 'batch-results';
     
-    results.forEach(result => {
+    // 处理每个结果项
+    results.forEach((result, index) => {
         const resultItem = document.createElement('div');
         resultItem.className = 'batch-item';
         
@@ -377,6 +395,14 @@ function showBatchResults(results) {
         const savingsPercent = ((result.original.size - result.compressed.size) / result.original.size * 100).toFixed(1);
         
         resultItem.innerHTML = `
+            <div class="item-controls">
+                <select class="format-select">
+                    <option value="image/jpeg">JPEG</option>
+                    <option value="image/png">PNG</option>
+                    <option value="image/webp">WebP</option>
+                    <option value="image/avif">AVIF</option>
+                </select>
+            </div>
             <div class="batch-image">
                 <img src="${URL.createObjectURL(result.compressed)}" alt="${result.original.name}">
             </div>
@@ -387,68 +413,96 @@ function showBatchResults(results) {
                     <span class="savings">(节省 ${savingsPercent}%)</span>
                 </div>
             </div>
-            <button class="download-single" data-blob="${URL.createObjectURL(result.compressed)}">
-                下载
-            </button>
+            <button class="download-single">下载</button>
         `;
         
-        // 添加单个文件下载事件
-        resultItem.querySelector('.download-single').addEventListener('click', function() {
+        // 处理单个文件的格式选择
+        const formatSelect = resultItem.querySelector('.format-select');
+        formatSelect.value = formatSelect.value || 'image/jpeg';
+        
+        formatSelect.addEventListener('change', async () => {
+            try {
+                const base64 = await readFileAsBase64(result.original);
+                const newBlob = await compressImage(base64, qualitySlider.value / 100, result.original);
+                result.compressed = newBlob;
+                
+                // 更新预览和大小信息
+                const img = resultItem.querySelector('img');
+                img.src = URL.createObjectURL(newBlob);
+                
+                const newSize = formatFileSize(newBlob.size);
+                const newSavings = ((result.original.size - newBlob.size) / result.original.size * 100).toFixed(1);
+                
+                resultItem.querySelector('.size-info').innerHTML = `
+                    原始: ${originalSize} → 压缩后: ${newSize}
+                    <span class="savings">(节省 ${newSavings}%)</span>
+                `;
+            } catch (error) {
+                showError('格式转换失败');
+            }
+        });
+        
+        // 处理下载按钮
+        const downloadBtn = resultItem.querySelector('.download-single');
+        downloadBtn.addEventListener('click', () => {
+            const format = formatSelect.value;
+            const ext = format.split('/')[1];
             const link = document.createElement('a');
-            link.href = this.dataset.blob;
-            link.download = `compressed_${result.original.name}`;
+            link.href = URL.createObjectURL(result.compressed);
+            link.download = `compressed_${result.original.name.split('.')[0]}.${ext}`;
             link.click();
         });
         
         resultsGrid.appendChild(resultItem);
     });
     
-    // 添加批量下载按钮
-    const batchDownload = document.createElement('button');
-    batchDownload.className = 'download-all-btn';
-    batchDownload.textContent = '下载所有文件';
-    batchDownload.onclick = () => downloadAllFiles(results);
+    // 处理批量格式设置
+    const batchFormatSelect = batchControls.querySelector('.batch-format-select');
+    const applyFormatBtn = batchControls.querySelector('.apply-format-btn');
     
-    // 添加返回按钮
-    const backButton = document.createElement('button');
-    backButton.className = 'reset-btn';
-    backButton.textContent = '返回上传';
-    backButton.onclick = () => {
-        const batchPreview = document.querySelector('.batch-preview');
-        if (batchPreview) batchPreview.remove();
+    applyFormatBtn.addEventListener('click', () => {
+        const selectedFormat = batchFormatSelect.value;
+        resultsGrid.querySelectorAll('.format-select').forEach(select => {
+            select.value = selectedFormat;
+            select.dispatchEvent(new Event('change'));
+        });
+    });
+    
+    // 添加批量下载按钮
+    const batchActions = document.createElement('div');
+    batchActions.className = 'batch-actions';
+    batchActions.innerHTML = `
+        <button class="download-all-btn">下载所有文件</button>
+        <button class="reset-btn">返回上传</button>
+    `;
+    
+    // 处理批量下载
+    const downloadAllBtn = batchActions.querySelector('.download-all-btn');
+    downloadAllBtn.addEventListener('click', () => {
+        results.forEach((result, index) => {
+            setTimeout(() => {
+                const format = resultsGrid.querySelectorAll('.format-select')[index].value;
+                const ext = format.split('/')[1];
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(result.compressed);
+                link.download = `compressed_${result.original.name.split('.')[0]}.${ext}`;
+                link.click();
+            }, index * 500);
+        });
+    });
+    
+    // 处理返回按钮
+    const resetBtn = batchActions.querySelector('.reset-btn');
+    resetBtn.addEventListener('click', () => {
+        batchPreview.remove();
         uploadArea.style.display = 'block';
         fileInput.value = '';
-    };
-    
-    // 显示结果
-    const batchPreview = document.createElement('div');
-    batchPreview.className = 'batch-preview';
-    batchPreview.appendChild(resultsGrid);
-    const buttonGroup = document.createElement('div');
-    buttonGroup.className = 'button-group';
-    buttonGroup.appendChild(batchDownload);
-    buttonGroup.appendChild(backButton);
-    batchPreview.appendChild(buttonGroup);
-    document.querySelector('.container').appendChild(batchPreview);
-}
-
-// 批量下载
-function downloadAllFiles(results) {
-    if (!results || results.length === 0) return;
-    
-    // 创建一个延迟队列，避免浏览器阻止多个下载
-    results.forEach((result, index) => {
-        setTimeout(() => {
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(result.compressed);
-            const ext = formatSelect.value.split('/')[1];
-            link.download = `compressed_${result.original.name.split('.')[0]}.${ext}`;
-            link.click();
-            
-            // 清理URL对象
-            setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-        }, index * 500); // 每个下载间隔500ms
     });
+    
+    batchPreview.appendChild(batchControls);
+    batchPreview.appendChild(resultsGrid);
+    batchPreview.appendChild(batchActions);
+    document.querySelector('.container').appendChild(batchPreview);
 }
 
 // 添加错误提示样式
