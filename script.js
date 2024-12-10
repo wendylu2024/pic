@@ -86,8 +86,16 @@ function handleImageUpload(file) {
 // 图片压缩
 function compressImage(base64, quality, originalFile) {
     return new Promise((resolve, reject) => {
+        // 显示加载提示
+        const loadingMessage = showLoading('正在处理图片...');
+        
         const img = new Image();
         img.onload = () => {
+            // 检查图片尺寸
+            if (img.width * img.height > 25000000) { // 约5000x5000像素
+                showWarning('图片尺寸较大，可能需要较长处理时间');
+            }
+            
             const canvas = document.createElement('canvas');
             canvas.width = img.width;
             canvas.height = img.height;
@@ -100,11 +108,14 @@ function compressImage(base64, quality, originalFile) {
             if (outputFormat === 'image/avif' && !supportsAVIF()) {
                 showError('您的浏览器不支持AVIF格式');
                 formatSelect.value = 'image/webp';
+                loadingMessage.remove();
                 reject(new Error('AVIF not supported'));
                 return;
             }
             
             canvas.toBlob((blob) => {
+                loadingMessage.remove();
+                
                 if (!blob) {
                     showError('格式转换失败,请尝试其他格式');
                     reject(new Error('Compression failed'));
@@ -120,14 +131,6 @@ function compressImage(base64, quality, originalFile) {
                     document.getElementById('compressionRate').textContent = compressionRate + '%';
                     document.getElementById('spaceSaved').textContent = 
                         formatFileSize(originalFile.size - blob.size);
-                    
-                    downloadBtn.onclick = () => {
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        const ext = outputFormat.split('/')[1];
-                        link.download = `compressed_${originalFile.name.split('.')[0]}.${ext}`;
-                        link.click();
-                    };
                 }
                 
                 resolve(blob);
@@ -135,6 +138,7 @@ function compressImage(base64, quality, originalFile) {
         };
         
         img.onerror = () => {
+            loadingMessage.remove();
             showError('图片加载失败');
             reject(new Error('Image load failed'));
         };
@@ -276,9 +280,15 @@ function validateFile(file) {
         return false;
     }
     
-    if (file.size > 10 * 1024 * 1024) {
-        showError('文件大小超过限制');
+    // 修改为50MB限制
+    if (file.size > 50 * 1024 * 1024) {
+        showError('文件大小超过50MB限制');
         return false;
+    }
+    
+    // 添加大文件警告
+    if (file.size > 20 * 1024 * 1024) {
+        showWarning('文件较大，处理可能需要较长时间');
     }
     
     return true;
@@ -691,7 +701,7 @@ document.querySelector('.upload-content p').textContent = '支持 PNG、JPG 等�
 function addReturnButton() {
     const previewArea = document.getElementById('previewArea');
     
-    // 创建返回按钮容器
+    // ���建返回按钮容器
     const returnContainer = document.createElement('div');
     returnContainer.className = 'return-container';
     
@@ -761,3 +771,25 @@ document.querySelectorAll('.compression-presets .preset-btn').forEach(btn => {
         }
     });
 });
+
+// 添加警告提示函数
+function showWarning(message) {
+    const warningDiv = document.createElement('div');
+    warningDiv.className = 'warning-message';
+    warningDiv.textContent = message;
+    document.querySelector('.container').appendChild(warningDiv);
+    
+    setTimeout(() => warningDiv.remove(), 5000);
+}
+
+// 添加加载提示函数
+function showLoading(message) {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'loading-message';
+    loadingDiv.innerHTML = `
+        <div class="loading-spinner"></div>
+        <span>${message}</span>
+    `;
+    document.querySelector('.container').appendChild(loadingDiv);
+    return loadingDiv;
+}
