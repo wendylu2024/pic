@@ -738,3 +738,26 @@ async function handleFiles(files) {
     
     // ... 继续现有代码 ...
 }
+
+// 添加预设按钮的事件处理
+document.querySelectorAll('.compression-presets .preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        // 获取预设质量值
+        const quality = btn.dataset.quality;
+        
+        // 更新质量滑块的值
+        qualitySlider.value = quality;
+        qualityValue.textContent = quality + '%';
+        
+        // 更新按钮状态
+        document.querySelectorAll('.compression-presets .preset-btn').forEach(b => {
+            b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        
+        // 如果有图片，重新压缩
+        if (originalImage.src && originalFile) {
+            compressImage(originalImage.src, quality / 100, originalFile);
+        }
+    });
+});
