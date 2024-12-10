@@ -531,13 +531,83 @@ function showBatchResults(results) {
         });
     });
     
-    // 添加批量下载按钮
+    // 处理批量格式设置
+    const batchFormatSelect = batchControls.querySelector('.batch-format-select');
+    const applyFormatBtn = batchControls.querySelector('.apply-format-btn');
+    
+    applyFormatBtn.addEventListener('click', async () => {
+        const selectedFormat = batchFormatSelect.value;
+        const qualityValue = batchQualitySlider.value / 100;
+        
+        // 更新所有图片的格式
+        const items = resultsGrid.querySelectorAll('.batch-item');
+        for (let item of items) {
+            const formatSelect = item.querySelector('.format-select');
+            formatSelect.value = selectedFormat;
+            
+            // 重新压缩当前图片
+            const index = Array.from(items).indexOf(item);
+            try {
+                const base64 = await readFileAsBase64(results[index].original);
+                const newBlob = await compressImage(base64, qualityValue, results[index].original);
+                results[index].compressed = newBlob;
+                
+                // 更新预览和信息
+                updateItemPreview(item, results[index]);
+            } catch (error) {
+                showError(`处理第 ${index + 1} 张图片时失败`);
+            }
+        }
+        
+        // 更新总体信息
+        updateTotalInfo(results);
+    });
+    
+    // 添加批量下载和返回按钮
     const batchActions = document.createElement('div');
     batchActions.className = 'batch-actions';
     batchActions.innerHTML = `
-        <button class="download-all-btn">下载所有文件</button>
-        <button class="reset-btn">返回上传</button>
+        <button class="download-all-btn primary-btn">下载所有文件</button>
+        <button class="reset-btn secondary-btn">返回上传</button>
     `;
+    
+    // 处理批量下载
+    const downloadAllBtn = batchActions.querySelector('.download-all-btn');
+    downloadAllBtn.addEventListener('click', () => {
+        results.forEach((result, index) => {
+            setTimeout(() => {
+                const formatSelect = resultsGrid.querySelectorAll('.format-select')[index];
+                const format = formatSelect.value;
+                const ext = format.split('/')[1];
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(result.compressed);
+                link.download = `compressed_${result.original.name.split('.')[0]}.${ext}`;
+                link.click();
+                
+                // 清理URL对象
+                setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+            }, index * 500);
+        });
+    });
+    
+    // 处理返回按钮
+    const resetBtn = batchActions.querySelector('.reset-btn');
+    resetBtn.addEventListener('click', () => {
+        // 清理所有URL对象
+        results.forEach(result => {
+            const imgs = document.querySelectorAll(`img[src*="${result.original.name}"]`);
+            imgs.forEach(img => URL.revokeObjectURL(img.src));
+        });
+        
+        // 移除批处理预览
+        batchPreview.remove();
+        
+        // 显示上传区域
+        uploadArea.style.display = 'block';
+        
+        // 重置文件输入
+        fileInput.value = '';
+    });
     
     batchPreview.appendChild(batchControls);
     batchPreview.appendChild(resultsGrid);

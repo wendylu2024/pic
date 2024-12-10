@@ -799,3 +799,86 @@ html {
         font-size: 13px;
     }
 }
+
+/* 按钮基础样式 */
+.primary-btn,
+.secondary-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* 主要按钮样式 */
+.primary-btn {
+    background: #0071e3;
+    color: white;
+    border: none;
+}
+
+.primary-btn:hover {
+    background: #0077ed;
+    transform: translateY(-2px);
+}
+
+/* 次要按钮样式 */
+.secondary-btn {
+    background: white;
+    color: #1d1d1f;
+    border: 1px solid #e5e5e7;
+}
+
+.secondary-btn:hover {
+    background: #f5f5f7;
+    border-color: #86868b;
+    transform: translateY(-2px);
+}
+
+/* 应用到全部按钮样式 */
+.apply-format-btn {
+    padding: 8px 16px;
+    background: #0071e3;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.apply-format-btn:hover {
+    background: #0077ed;
+    transform: translateY(-1px);
+}
+
+/* 批量操作按钮容器 */
+.batch-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+/* 下载所有文件按钮 */
+.download-all-btn {
+    background: #0071e3;
+    color: white;
+}
+
+.download-all-btn:hover {
+    background: #0077ed;
+}
+
+/* 返回按钮 */
+.reset-btn {
+    background: white;
+    color: #1d1d1f;
+    border: 1px solid #e5e5e7;
+}
+
+.reset-btn:hover {
+    background: #f5f5f7;
+    border-color: #86868b;
+}
