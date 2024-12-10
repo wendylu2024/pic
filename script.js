@@ -536,3 +536,55 @@ document.head.appendChild(style);
 
 // 修改上传区域的提示文字
 document.querySelector('.upload-content p').textContent = '支持 PNG、JPG 等格式，可同时选择多张图片';
+
+// 添加返回按钮功能
+function addReturnButton() {
+    const previewArea = document.getElementById('previewArea');
+    
+    // 创建返回按钮容器
+    const returnContainer = document.createElement('div');
+    returnContainer.className = 'return-container';
+    
+    // 创建返回按钮
+    const returnButton = document.createElement('button');
+    returnButton.className = 'return-btn';
+    returnButton.innerHTML = '← 返回上传';
+    
+    // 添加点击事件
+    returnButton.onclick = function() {
+        // 重置界面
+        document.getElementById('previewArea').style.display = 'none';
+        document.getElementById('controlPanel').style.display = 'none';
+        document.getElementById('progressArea').style.display = 'none';
+        document.getElementById('imageGrid').innerHTML = '';
+        
+        // 显示上传区域
+        document.getElementById('uploadArea').style.display = 'block';
+        
+        // 重置文件输入
+        document.getElementById('fileInput').value = '';
+        
+        // 清空当前文件记录
+        currentFiles = [];
+    };
+    
+    // 将按钮添加到容器
+    returnContainer.appendChild(returnButton);
+    
+    // 将容器插入到预览区域的最前面
+    previewArea.insertBefore(returnContainer, previewArea.firstChild);
+}
+
+// 修改 handleFiles 函数，在显示预览区域时添加返回按钮
+async function handleFiles(files) {
+    // ... 现有代码 ...
+    
+    // 显示预览区域
+    const previewArea = document.getElementById('previewArea');
+    previewArea.style.display = 'block';
+    
+    // 添加返回按钮
+    addReturnButton();
+    
+    // ... 继续现有代码 ...
+}

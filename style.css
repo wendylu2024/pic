@@ -587,3 +587,42 @@ html {
 .apply-format-btn:hover {
     background: #0077ed;
 }
+
+/* 返回按钮容器 */
+.return-container {
+    margin-bottom: 20px;
+    padding: 10px 0;
+}
+
+/* 返回按钮样式 */
+.return-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--primary-light);
+    border-radius: 8px;
+    color: var(--primary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.return-btn:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--primary);
+    transform: translateX(-2px);
+}
+
+/* 添加响应式样式 */
+@media (max-width: 768px) {
+    .return-container {
+        margin-bottom: 15px;
+        padding: 8px 0;
+    }
+    
+    .return-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+}
