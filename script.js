@@ -131,6 +131,18 @@ function compressImage(base64, quality, originalFile) {
                     document.getElementById('compressionRate').textContent = compressionRate + '%';
                     document.getElementById('spaceSaved').textContent = 
                         formatFileSize(originalFile.size - blob.size);
+                    
+                    // 添加回下载按钮功能
+                    downloadBtn.onclick = () => {
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        const ext = outputFormat.split('/')[1];
+                        link.download = `compressed_${originalFile.name.split('.')[0]}.${ext}`;
+                        link.click();
+                        
+                        // 清理URL对象
+                        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+                    };
                 }
                 
                 resolve(blob);
@@ -701,7 +713,7 @@ document.querySelector('.upload-content p').textContent = '支持 PNG、JPG 等�
 function addReturnButton() {
     const previewArea = document.getElementById('previewArea');
     
-    // ���建返回按钮容器
+    // 建返回按钮容器
     const returnContainer = document.createElement('div');
     returnContainer.className = 'return-container';
     
