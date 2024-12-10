@@ -365,19 +365,34 @@ function showBatchResults(results) {
     const batchPreview = document.createElement('div');
     batchPreview.className = 'batch-preview';
     
-    // 添加批量格式控制
+    // 添加批处理控制面板
     const batchControls = document.createElement('div');
     batchControls.className = 'batch-controls';
     batchControls.innerHTML = `
-        <div class="format-control">
-            <label>批量设置格式:</label>
-            <select class="batch-format-select">
-                <option value="image/jpeg">JPEG - 适合照片</option>
-                <option value="image/png">PNG - 支持透明</option>
-                <option value="image/webp">WebP - 更小体积</option>
-                <option value="image/avif">AVIF - 最佳压缩</option>
-            </select>
-            <button class="apply-format-btn">应用到全部</button>
+        <div class="control-group">
+            <div class="format-control">
+                <label>输出格式:</label>
+                <select class="batch-format-select">
+                    <option value="image/jpeg">JPEG - 适合照片</option>
+                    <option value="image/png">PNG - 支持透明</option>
+                    <option value="image/webp">WebP - 更小体积</option>
+                    <option value="image/avif">AVIF - 最佳压缩</option>
+                </select>
+                <button class="apply-format-btn">应用到全部</button>
+            </div>
+            <div class="quality-control">
+                <label>压缩质量: <span class="batch-quality-value">80%</span></label>
+                <input type="range" class="batch-quality-slider" min="0" max="100" value="80">
+            </div>
+            <div class="preset-buttons">
+                <button class="preset-btn" data-quality="90">高质量</button>
+                <button class="preset-btn active" data-quality="80">平衡</button>
+                <button class="preset-btn" data-quality="60">高压缩</button>
+            </div>
+        </div>
+        <div class="total-info">
+            <span>共 ${results.length} 张图片</span>
+            <span class="total-saved">已节省: <span class="total-saved-size">0 KB</span></span>
         </div>
     `;
     
@@ -387,6 +402,10 @@ function showBatchResults(results) {
     
     // 处理每个结果项
     results.forEach((result, index) => {
+        // 创建URL对象
+        const originalUrl = URL.createObjectURL(result.original);
+        const compressedUrl = URL.createObjectURL(result.compressed);
+        
         const resultItem = document.createElement('div');
         resultItem.className = 'batch-item';
         
@@ -395,6 +414,20 @@ function showBatchResults(results) {
         const savingsPercent = ((result.original.size - result.compressed.size) / result.original.size * 100).toFixed(1);
         
         resultItem.innerHTML = `
+            <div class="item-preview">
+                <div class="preview-toggle">
+                    <div class="preview-original">
+                        <img src="${originalUrl}" alt="原图" onload="this.parentElement.classList.add('loaded')">
+                        <span class="preview-label">原图</span>
+                        <div class="loading-spinner"></div>
+                    </div>
+                    <div class="preview-compressed">
+                        <img src="${compressedUrl}" alt="压缩后" onload="this.parentElement.classList.add('loaded')">
+                        <span class="preview-label">压缩后</span>
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </div>
             <div class="item-controls">
                 <select class="format-select">
                     <option value="image/jpeg">JPEG</option>
@@ -402,23 +435,49 @@ function showBatchResults(results) {
                     <option value="image/webp">WebP</option>
                     <option value="image/avif">AVIF</option>
                 </select>
+                <input type="range" class="quality-slider" min="0" max="100" value="80">
             </div>
-            <div class="batch-image">
-                <img src="${URL.createObjectURL(result.compressed)}" alt="${result.original.name}">
-            </div>
-            <div class="batch-info">
+            <div class="item-info">
                 <div class="filename">${result.original.name}</div>
                 <div class="size-info">
-                    原始: ${originalSize} → 压缩后: ${compressedSize}
+                    <span>原始: ${originalSize}</span>
+                    <span class="arrow">→</span>
+                    <span>压缩后: ${compressedSize}</span>
                     <span class="savings">(节省 ${savingsPercent}%)</span>
                 </div>
             </div>
             <button class="download-single">下载</button>
         `;
         
-        // 处理单个文件的格式选择
+        // 添加预览切换功能
+        const previewToggle = resultItem.querySelector('.preview-toggle');
+        previewToggle.addEventListener('click', () => {
+            const isShowingOriginal = previewToggle.classList.contains('show-original');
+            previewToggle.classList.toggle('show-original');
+            
+            // 更新标签文本
+            const label = resultItem.querySelector('.preview-label');
+            label.textContent = isShowingOriginal ? '压缩后' : '原图';
+        });
+        
+        // 处理单个文件的质量和格式设置
+        const qualitySlider = resultItem.querySelector('.quality-slider');
         const formatSelect = resultItem.querySelector('.format-select');
-        formatSelect.value = formatSelect.value || 'image/jpeg';
+        
+        qualitySlider.addEventListener('input', async () => {
+            try {
+                const quality = qualitySlider.value / 100;
+                const base64 = await readFileAsBase64(result.original);
+                const newBlob = await compressImage(base64, quality, result.original);
+                result.compressed = newBlob;
+                
+                // 更新预览和信息
+                updateItemPreview(resultItem, result);
+                updateTotalInfo(results);
+            } catch (error) {
+                showError('压缩失败');
+            }
+        });
         
         formatSelect.addEventListener('change', async () => {
             try {
@@ -426,45 +485,49 @@ function showBatchResults(results) {
                 const newBlob = await compressImage(base64, qualitySlider.value / 100, result.original);
                 result.compressed = newBlob;
                 
-                // 更新预览和大小信息
-                const img = resultItem.querySelector('img');
-                img.src = URL.createObjectURL(newBlob);
-                
-                const newSize = formatFileSize(newBlob.size);
-                const newSavings = ((result.original.size - newBlob.size) / result.original.size * 100).toFixed(1);
-                
-                resultItem.querySelector('.size-info').innerHTML = `
-                    原始: ${originalSize} → 压缩后: ${newSize}
-                    <span class="savings">(节省 ${newSavings}%)</span>
-                `;
+                // 更新预览和信息
+                updateItemPreview(resultItem, result);
+                updateTotalInfo(results);
             } catch (error) {
                 showError('格式转换失败');
             }
         });
         
-        // 处理下载按钮
-        const downloadBtn = resultItem.querySelector('.download-single');
-        downloadBtn.addEventListener('click', () => {
-            const format = formatSelect.value;
-            const ext = format.split('/')[1];
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(result.compressed);
-            link.download = `compressed_${result.original.name.split('.')[0]}.${ext}`;
-            link.click();
-        });
-        
         resultsGrid.appendChild(resultItem);
+        
+        // 清理URL对象
+        resultItem.addEventListener('remove', () => {
+            URL.revokeObjectURL(originalUrl);
+            URL.revokeObjectURL(compressedUrl);
+        });
     });
     
-    // 处理批量格式设置
-    const batchFormatSelect = batchControls.querySelector('.batch-format-select');
-    const applyFormatBtn = batchControls.querySelector('.apply-format-btn');
+    // 处理批量质量设置
+    const batchQualitySlider = batchControls.querySelector('.batch-quality-slider');
+    const batchQualityValue = batchControls.querySelector('.batch-quality-value');
     
-    applyFormatBtn.addEventListener('click', () => {
-        const selectedFormat = batchFormatSelect.value;
-        resultsGrid.querySelectorAll('.format-select').forEach(select => {
-            select.value = selectedFormat;
-            select.dispatchEvent(new Event('change'));
+    batchQualitySlider.addEventListener('input', async () => {
+        const quality = batchQualitySlider.value;
+        batchQualityValue.textContent = quality + '%';
+        
+        // 更新所有图片的质量滑块
+        resultsGrid.querySelectorAll('.quality-slider').forEach(slider => {
+            slider.value = quality;
+            slider.dispatchEvent(new Event('input'));
+        });
+    });
+    
+    // 处理预设按钮
+    batchControls.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const quality = btn.dataset.quality;
+            batchQualitySlider.value = quality;
+            batchQualityValue.textContent = quality + '%';
+            batchQualitySlider.dispatchEvent(new Event('input'));
+            
+            // 更新按钮状态
+            batchControls.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
         });
     });
     
@@ -476,33 +539,50 @@ function showBatchResults(results) {
         <button class="reset-btn">返回上传</button>
     `;
     
-    // 处理批量下载
-    const downloadAllBtn = batchActions.querySelector('.download-all-btn');
-    downloadAllBtn.addEventListener('click', () => {
-        results.forEach((result, index) => {
-            setTimeout(() => {
-                const format = resultsGrid.querySelectorAll('.format-select')[index].value;
-                const ext = format.split('/')[1];
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(result.compressed);
-                link.download = `compressed_${result.original.name.split('.')[0]}.${ext}`;
-                link.click();
-            }, index * 500);
-        });
-    });
-    
-    // 处理返回按钮
-    const resetBtn = batchActions.querySelector('.reset-btn');
-    resetBtn.addEventListener('click', () => {
-        batchPreview.remove();
-        uploadArea.style.display = 'block';
-        fileInput.value = '';
-    });
-    
     batchPreview.appendChild(batchControls);
     batchPreview.appendChild(resultsGrid);
     batchPreview.appendChild(batchActions);
     document.querySelector('.container').appendChild(batchPreview);
+    
+    // 初始计算总节省空间
+    updateTotalInfo(results);
+}
+
+// 更新单个项目的预览和信息
+function updateItemPreview(item, result) {
+    const compressedImg = item.querySelector('.preview-compressed img');
+    const newUrl = URL.createObjectURL(result.compressed);
+    
+    // 添加加载状态
+    const previewCompressed = compressedImg.parentElement;
+    previewCompressed.classList.remove('loaded');
+    
+    compressedImg.onload = () => {
+        previewCompressed.classList.add('loaded');
+        // 清理旧的URL
+        URL.revokeObjectURL(compressedImg.src);
+    };
+    
+    compressedImg.src = newUrl;
+    
+    const compressedSize = formatFileSize(result.compressed.size);
+    const savingsPercent = ((result.original.size - result.compressed.size) / result.original.size * 100).toFixed(1);
+    
+    item.querySelector('.size-info').innerHTML = `
+        <span>原始: ${formatFileSize(result.original.size)}</span>
+        <span class="arrow">→</span>
+        <span>压缩后: ${compressedSize}</span>
+        <span class="savings">(节省 ${savingsPercent}%)</span>
+    `;
+}
+
+// 更新总体信息
+function updateTotalInfo(results) {
+    const totalOriginalSize = results.reduce((sum, result) => sum + result.original.size, 0);
+    const totalCompressedSize = results.reduce((sum, result) => sum + result.compressed.size, 0);
+    const totalSaved = totalOriginalSize - totalCompressedSize;
+    
+    document.querySelector('.total-saved-size').textContent = formatFileSize(totalSaved);
 }
 
 // 添加错误提示样式
